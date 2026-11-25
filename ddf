@@ -1,0 +1,102 @@
+
+#include <windows.h>
+#include <cmath>
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+    static int x = 100;
+    static int direction = 1;
+    static int wing = 0;
+
+    switch (msg) {
+    case WM_CREATE:
+        SetTimer(hwnd, 1, 30, NULL);
+        return 0;
+
+    case WM_TIMER:
+        x += direction * 4;
+        wing = !wing;
+
+        if (x > 500 || x < 20)
+            direction *= -1;
+
+        InvalidateRect(hwnd, NULL, TRUE);
+        return 0;
+
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hwnd, &ps);
+
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+        FillRect(hdc, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH));
+
+        // Крылья
+        HBRUSH white = CreateSolidBrush(RGB(220, 240, 255));
+        SelectObject(hdc, white);
+        Ellipse(hdc, x + 15, 80 - wing * 10, x + 45, 115 - wing * 10);
+        Ellipse(hdc, x + 35, 80 + wing * 10, x + 65, 115 + wing * 10);
+
+        // Тело
+        HBRUSH yellow = CreateSolidBrush(RGB(255, 210, 0));
+        SelectObject(hdc, yellow);
+        Ellipse(hdc, x, 100, x + 80, 150);
+
+        // Чёрные полосы
+        HPEN pen = CreatePen(PS_SOLID, 7, RGB(30, 30, 30));
+        SelectObject(hdc, pen);
+        MoveToEx(hdc, x + 25, 105, NULL);
+        LineTo(hdc, x + 25, 145);
+        MoveToEx(hdc, x + 50, 105, NULL);
+        LineTo(hdc, x + 50, 145);
+
+        // Глаза
+        HBRUSH black = CreateSolidBrush(RGB(0, 0, 0));
+        SelectObject(hdc, black);
+        Ellipse(hdc, x + 58, 110, x + 64, 116);
+
+        DeleteObject(white);
+        DeleteObject(yellow);
+        DeleteObject(black);
+        DeleteObject(pen);
+
+        EndPaint(hwnd, &ps);
+        return 0;
+    }
+
+    case WM_DESTROY:
+        KillTimer(hwnd, 1);
+        PostQuitMessage(0);
+        return 0;
+    }
+    return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
+    const wchar_t CLASS_NAME[] = L"BeeWindow";
+
+    WNDCLASS wc = {};
+    wc.lpfnWndProc = WindowProc;
+    wc.hInstance = hInstance;
+    wc.lpszClassName = CLASS_NAME;
+    wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+    RegisterClass(&wc);
+
+    HWND hwnd = CreateWindowEx(
+        0, CLASS_NAME, L"My Bee 🐝",
+        WS_OVERLAPPEDWINDOW,
+        CW_USEDEFAULT, CW_USEDEFAULT, 650, 300,
+        NULL, NULL, hInstance, NULL
+    );
+
+    if (!hwnd) return 0;
+
+    ShowWindow(hwnd, nCmdShow);
+
+    MSG msg = {};
+    while (GetMessage(&msg, NULL, 0, 0)) {
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+    }
+
+    return 0;
+}
