@@ -1,0 +1,25 @@
+
+name: Build Bee EXE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build
+        shell: cmd
+        run: |
+          cl /nologo /EHsc /O2 main.cpp /link /SUBSYSTEM:WINDOWS user32.lib gdi32.lib /OUT:Bee.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Bee-Windows
+          path: Bee.exe
